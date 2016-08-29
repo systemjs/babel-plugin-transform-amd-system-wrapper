@@ -8,12 +8,13 @@ export default function ({ types: t }) {
 
   const buildFactory = template(`
     (function($__require, $__exports, $__module) {
+      MODULE_ID
       return BODY;
     })
   `);
 
   const buildDefineGlobal = template(`
-     $__module.url = $__module.id;
+     $__module.uri = $__module.id;
   `);
 
   return {
@@ -26,12 +27,14 @@ export default function ({ types: t }) {
         if (t.isIdentifier(callee, { name: 'define' }) && args.length === 2) {
 
           let isExportsInDeps = false;
+          let isModuleInDeps = false;
 
           // Call params used for the define factories wrapped in IIFEs
           var callParams = [];
           if (t.isArrayExpression(args[0])) {
             // Test if 'exports' exists as dependency: define(['exports'], function(exports) {})
             isExportsInDeps = args[0].elements.filter((param) => param.value === 'exports').length > 0;
+            isModuleInDeps = args[0].elements.filter((param) => param.value === 'module').length > 0;
 
             args[0].elements.forEach((param) => {
               if (['require', 'module', 'exports'].indexOf(param.value) !== -1) {
@@ -59,6 +62,7 @@ export default function ({ types: t }) {
           }
 
           const factory = buildFactory({
+            MODULE_ID: isModuleInDeps ? buildDefineGlobal() : null,
             BODY: defineFactory
           });
 

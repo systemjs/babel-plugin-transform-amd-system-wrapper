@@ -1,6 +1,6 @@
-System.registerDynamic(['./first.js', './second.js'], false, function($__require, $__exports, $__module) {
+System.registerDynamic(['./first.js', './second.js'], false, function ($__require, $__exports, $__module) {
   $__module.uri = $__module.id;
-  return (function(first, second, require, module) {
+  return (function (first, second, require, module) {
 
     module.exports = {
       first: first,
@@ -11,6 +11,5 @@ System.registerDynamic(['./first.js', './second.js'], false, function($__require
     if (DEBUG) {
       console.log('debug mode');
     }
-
   }).call(this, $__require('./first.js'), $__require('./second.js'), $__require, $__module);
 });
