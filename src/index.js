@@ -113,6 +113,25 @@ export default function ({ types: t }) {
             });
           }
 
+          // Handle factory default params
+          if (dependencies.length === 0 &&
+            t.isFunctionExpression(defineFactory)) {
+            defineFactory.params.forEach((factoryParam, index) => {
+              switch (index) {
+                case 0:
+                  callParams.push(t.identifier('$__require'));
+                  break;
+                case 1:
+                  callParams.push(t.identifier('$__exports'));
+                  isExportsInDeps = true;
+                  break;
+                case 2:
+                  callParams.push(t.identifier('$__module'));
+                  break;
+              }
+            });
+          }
+
           let defineFactoryReferenceIdentifier;
           let factoryExpressionDeclaration;
           let thisBindingExpression = isExportsInDeps ? t.identifier('$__exports') : t.thisExpression();
