@@ -1,5 +1,4 @@
-
-/* asdf 
+/* asdf
 
 define({ amd: 2 }); // ?
 

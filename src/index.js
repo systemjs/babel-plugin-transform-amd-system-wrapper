@@ -9,8 +9,21 @@ export default function ({ types: t }) {
   const buildFactory = template(`
     (function($__require, $__exports, $__module) {
       MODULE_URI
-      return BODY;
+      BODY;
     })
+  `);
+
+  const buildFactoryTypeCheck = template(`
+    FACTORY_DECLARATION
+    if (typeof FACTORY_REFERENCE === TYPE) {
+      return FACTORY_CALL;
+    } else {
+      return FACTORY_REFERENCE;
+    }
+  `);
+
+  const buildFactoryExpressionDeclaration = template(`
+    var $__factory = FACTORY_EXPRESSION;
   `);
 
   const buildModuleURIBinding = template(`
@@ -82,18 +95,51 @@ export default function ({ types: t }) {
             });
           }
 
+          let defineFactoryReferenceIdentifier;
+          let factoryExpressionDeclaration;
           let thisBindingExpression = isExportsInDeps ? t.identifier('$__exports') : t.thisExpression();
           if (t.isFunctionExpression(defineFactory)) {
+            // If factory is passed as function argument
             const call = t.memberExpression(t.parenthesizedExpression(defineFactory), t.identifier('call'));
             defineFactory = t.callExpression(call, [thisBindingExpression, ...callParams]);
-          } else if (t.isIdentifier(defineFactory) || t.isExpressionStatement(defineFactory)) {
+          } else if (t.isIdentifier(defineFactory)) {
+            // If factory is passed as identifier argument
+            defineFactoryReferenceIdentifier = t.identifier(defineFactory.name);
             const call = t.memberExpression(defineFactory, t.identifier('call'));
             defineFactory = t.callExpression(call, [thisBindingExpression, ...callParams]);
+          } else if (!t.isObjectExpression(defineFactory)) {
+            // If factory is passed as expression argument
+            defineFactoryReferenceIdentifier = t.identifier('$__factory');
+            factoryExpressionDeclaration = buildFactoryExpressionDeclaration({
+              FACTORY_EXPRESSION: t.parenthesizedExpression(defineFactory)
+            });
+            const call = t.memberExpression(defineFactoryReferenceIdentifier, t.identifier('call'));
+            defineFactory = t.callExpression(call, [thisBindingExpression, ...callParams]);
+          }
+
+          let factoryTypeTestNeeded = false;
+          // Wraps the factory in a ```if (typeof factory === 'function') {}``` test only a factory reference is present
+          if (!moduleName && defineFactoryReferenceIdentifier) {
+            factoryTypeTestNeeded = true;
+            defineFactory = buildFactoryTypeCheck({
+              FACTORY_REFERENCE: defineFactoryReferenceIdentifier,
+              FACTORY_CALL: defineFactory,
+              TYPE: t.stringLiteral('function'),
+              FACTORY_DECLARATION: factoryExpressionDeclaration || null
+            });
+          } else if (moduleName && dependencies.length === 0 && defineFactoryReferenceIdentifier) {
+            factoryTypeTestNeeded = true;
+            defineFactory = buildFactoryTypeCheck({
+              FACTORY_REFERENCE: defineFactoryReferenceIdentifier,
+              FACTORY_CALL: defineFactory,
+              TYPE: t.stringLiteral('object'),
+              FACTORY_DECLARATION: factoryExpressionDeclaration || null
+            });
           }
 
           const factory = buildFactory({
             MODULE_URI: isModuleInDeps ? buildModuleURIBinding() : null,
-            BODY: defineFactory
+            BODY: factoryTypeTestNeeded ? defineFactory : t.returnStatement(defineFactory)
           });
 
           const systemRegister = buildTemplate({

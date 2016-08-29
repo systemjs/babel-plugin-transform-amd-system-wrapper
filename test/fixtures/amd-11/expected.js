@@ -12,8 +12,9 @@
     };
   });
 })();
+
 System.registerDynamic(['amd-10.js'], false, function ($__require, $__exports, $__module) {
-  return (['amd-10.js'], function (m) {
+  return (function (m) {
     return m;
   }).call(this, $__require('amd-10.js'));
 });
