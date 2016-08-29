@@ -1,5 +1,5 @@
-System.registerDynamic([], false, function($__require, $__exports, $__module) {
-  return (function() {
+System.registerDynamic([], false, function ($__require, $__exports, $__module) {
+  return (function () {
 
     var a = 'a';
 
