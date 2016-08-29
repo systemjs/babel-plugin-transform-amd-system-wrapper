@@ -36,6 +36,17 @@ export default function ({ types: t }) {
         const callee = path.node.callee;
         const args = path.node.arguments;
 
+        // Leave nested define untouched
+        let currentPath = path;
+        while (currentPath.parentPath) {
+          currentPath = currentPath.parentPath;
+          if (currentPath.node.callee &&
+            t.isIdentifier(currentPath.node.callee.object, { name: 'System' }) &&
+            t.isIdentifier(currentPath.node.callee.property, { name: 'registerDynamic' })) {
+            return;
+          }
+        }
+
         // match define(function(require) {})
         // match define(['dep1'], function(dep1) {})
         // match define('moduleName', function(dep1) {})
@@ -47,38 +58,45 @@ export default function ({ types: t }) {
 
           let moduleName = null,
             dependencies = [],
-            defineFactory = null;
+            defineFactory = null,
+            isExportsInDeps = false,
+            isModuleInDepsOrInFactoryParam = false;
 
           if (args.length === 1) {
             // first param is factory object/function
             defineFactory = args[0];
+            // parse factory params
+            if (t.isFunctionExpression(defineFactory)) {
+              defineFactory.params.forEach((factoryParam) => {
+                if (t.isIdentifier(factoryParam) && factoryParam.name === 'module') {
+                  isModuleInDepsOrInFactoryParam = true;
+                }
+              });
+            }
           } else if (args.length === 2) {
             // first param is either module name or dependency array
-            // second param is factory object/function
             if (t.isStringLiteral(args[0])) {
               moduleName = args[0];
             } else if (t.isArrayExpression(args[0])) {
               dependencies = args[0];
             }
+            // second param is factory object/function
             defineFactory = args[1];
           } else {
             // first param is module name
-            // second param is dependency array
-            // third param is factory object/function
             moduleName = args[0];
+            // second param is dependency array
             dependencies = args[1];
+            // third param is factory object/function
             defineFactory = args[2];
           }
-
-          let isExportsInDeps = false,
-            isModuleInDeps = false;
 
           // Call params used for the define factories wrapped in IIFEs
           var callParams = [];
           if (t.isArrayExpression(dependencies)) {
             // Test if 'exports' exists as dependency: define(['exports'], function(exports) {})
             isExportsInDeps = dependencies.elements.filter((param) => param.value === 'exports').length > 0;
-            isModuleInDeps = dependencies.elements.filter((param) => param.value === 'module').length > 0;
+            isModuleInDepsOrInFactoryParam = dependencies.elements.filter((param) => param.value === 'module').length > 0;
 
             dependencies.elements.forEach((param) => {
               if (['require', 'module', 'exports'].indexOf(param.value) !== -1) {
@@ -118,8 +136,8 @@ export default function ({ types: t }) {
           }
 
           let factoryTypeTestNeeded = false;
-          // Wraps the factory in a ```if (typeof factory === 'function') {}``` test only a factory reference is present
           if (!moduleName && defineFactoryReferenceIdentifier) {
+            // Wraps the factory in a ```if (typeof factory === 'function') {}``` test only a factory reference is present
             factoryTypeTestNeeded = true;
             defineFactory = buildFactoryTypeCheck({
               FACTORY_REFERENCE: defineFactoryReferenceIdentifier,
@@ -128,6 +146,7 @@ export default function ({ types: t }) {
               FACTORY_DECLARATION: factoryExpressionDeclaration || null
             });
           } else if (moduleName && dependencies.length === 0 && defineFactoryReferenceIdentifier) {
+            // Wraps the factory in a ```if (typeof factory === 'object') {}``` test only a factory reference is present
             factoryTypeTestNeeded = true;
             defineFactory = buildFactoryTypeCheck({
               FACTORY_REFERENCE: defineFactoryReferenceIdentifier,
@@ -138,7 +157,7 @@ export default function ({ types: t }) {
           }
 
           const factory = buildFactory({
-            MODULE_URI: isModuleInDeps ? buildModuleURIBinding() : null,
+            MODULE_URI: isModuleInDepsOrInFactoryParam ? buildModuleURIBinding() : null,
             BODY: factoryTypeTestNeeded ? defineFactory : t.returnStatement(defineFactory)
           });
 
