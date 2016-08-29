@@ -3,8 +3,7 @@ function factory(second) {
   return second;
 }
 
-if (false)
-  System.import('x');
+if (false) System.import('x');
 
 
 System.registerDynamic(['./second.js'], false, function ($__require, $__exports, $__module) {

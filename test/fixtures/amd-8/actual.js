@@ -1,4 +1,4 @@
 if (!window.meta)
-define(function() {
+define(function () {
   return window.meta;
 });
