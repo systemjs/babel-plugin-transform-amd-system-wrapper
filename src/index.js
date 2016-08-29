@@ -8,12 +8,12 @@ export default function ({ types: t }) {
 
   const buildFactory = template(`
     (function($__require, $__exports, $__module) {
-      MODULE_ID
+      MODULE_URI
       return BODY;
     })
   `);
 
-  const buildDefineGlobal = template(`
+  const buildModuleURIBinding = template(`
      $__module.uri = $__module.id;
   `);
 
@@ -62,7 +62,7 @@ export default function ({ types: t }) {
           }
 
           const factory = buildFactory({
-            MODULE_ID: isModuleInDeps ? buildDefineGlobal() : null,
+            MODULE_URI: isModuleInDeps ? buildModuleURIBinding() : null,
             BODY: defineFactory
           });
 
