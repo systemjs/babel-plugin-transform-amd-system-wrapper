@@ -19,7 +19,9 @@ define(['bar'], function(bar, require, module) {
 {
   plugins: [
     ['transform-amd-system-wrapper', {
-		// TBD
+		  map: function(dep) {
+        return dep;
+      }
     }]
   ]
 }
@@ -56,7 +58,9 @@ $ npm install babel-plugin-transform-amd-system-wrapper
 {
   "plugins": [
     ["transform-amd-system-wrapper", {
-      // TBD
+      map: function(dep) {
+        return dep;
+      }
     }]
   ]
 }
@@ -74,7 +78,9 @@ $ babel --plugins transform-amd-system-wrapper script.js
 require("babel-core").transform("code", {
   plugins: [
     ["transform-amd-system-wrapper", {
-      // TBD
+      map: function(dep) {
+        return dep;
+      }
     }]
   ]
 });

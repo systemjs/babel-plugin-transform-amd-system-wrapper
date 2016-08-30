@@ -246,6 +246,13 @@ export default function ({ types: t }) {
           // Concat with required depencies array which contains string literals if factory default params are used
           deps = deps.concat(...newDeps);
 
+          // Map dependencies
+          if (typeof opts.map === 'function') {
+            deps.forEach(e => {
+              e.value = opts.map(e.value);
+            });
+          }
+
           const systemRegister = buildTemplate({
             SYSTEM_GLOBAL: t.identifier('System'),
             MODULE_ID: moduleName,
