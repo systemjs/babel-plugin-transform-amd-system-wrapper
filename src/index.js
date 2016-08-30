@@ -51,8 +51,8 @@ export default function ({ types: t }) {
         // match define(['dep1'], function(dep1) {})
         // match define('moduleName', function(dep1) {})
         // match define('moduleName', ['dep1'], function(dep1) {})
-        if (!path.scope.hasBinding('define') &&
-          t.isIdentifier(callee, { name: 'define' }) &&
+        if (t.isIdentifier(callee, { name: 'define' }) &&
+          !path.scope.hasBinding('define') &&
           args.length >= 1 &&
           args.length <= 3) {
 
@@ -218,22 +218,13 @@ export default function ({ types: t }) {
           }
 
           let factoryTypeTestNeeded = false;
-          if (!moduleName && factoryReferenceIdentifier) {
+          if ((!moduleName || moduleName && deps.length === 0) && factoryReferenceIdentifier) {
             // Wraps the factory in a ```if (typeof factory === 'function') {}``` test only a factory reference is present
             factoryTypeTestNeeded = true;
             factoryArg = buildFactoryTypeCheck({
               FACTORY_REFERENCE: factoryReferenceIdentifier,
               FACTORY_CALL: factoryArg,
               TYPE: t.stringLiteral('function'),
-              FACTORY_DECLARATION: factoryAsExpressionDeclaration || null
-            });
-          } else if (moduleName && deps.length === 0 && factoryReferenceIdentifier) {
-            // Wraps the factory in a ```if (typeof factory === 'object') {}``` test only a factory reference is present
-            factoryTypeTestNeeded = true;
-            factoryArg = buildFactoryTypeCheck({
-              FACTORY_REFERENCE: factoryReferenceIdentifier,
-              FACTORY_CALL: factoryArg,
-              TYPE: t.stringLiteral('object'),
               FACTORY_DECLARATION: factoryAsExpressionDeclaration || null
             });
           }
@@ -265,17 +256,17 @@ export default function ({ types: t }) {
       },
       MemberExpression(path, { opts }) {
         // Replace `define.amd` with `true` if it's used inside a logical expression.
-        if (!path.scope.hasBinding('define') &&
+        if (t.isIdentifier(path.node.object, { name: 'define' }) &&
+          t.isIdentifier(path.node.property, { name: 'amd' }) &&
+          !path.scope.hasBinding('define') &&
           path.parentPath &&
-          t.isLogicalExpression(path.parentPath) &&
-          t.isIdentifier(path.node.object, { name: 'define' }) &&
-          t.isIdentifier(path.node.property, { name: 'amd' })) {
+          t.isLogicalExpression(path.parentPath)) {
           path.replaceWith(t.booleanLiteral(true));
         }
       },
       Identifier(path, { opts }) {
         // Replace `typeof define` if it's used inside a unary expression.
-        if (path.node.name == 'define' &&
+        if (t.isIdentifier(path.node, { name: 'define' }) &&
           !path.scope.hasBinding('define') &&
           path.parentPath &&
           t.isUnaryExpression(path.parentPath) &&
