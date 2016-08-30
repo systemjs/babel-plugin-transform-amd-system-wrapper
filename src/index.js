@@ -36,6 +36,10 @@ export default function ({ types: t }) {
         const callee = path.node.callee;
         const args = path.node.arguments;
 
+        // TODOs
+        // TEST for this bindings => $__exports as thisBindingExpression
+        // Map required dependencies in CJS style to deps array
+
         // Leave nested define untouched
         let currentPath = path;
         while (currentPath.parentPath) {
@@ -113,19 +117,47 @@ export default function ({ types: t }) {
             });
           }
 
+          let requiredDeps = [];
+
           // Handle factory default params
           if (dependencies.length === 0 &&
             t.isFunctionExpression(defineFactory)) {
-            defineFactory.params.forEach((factoryParam, index) => {
+            // Iterate over each param of the define factory
+            defineFactory.params.forEach((param, index) => {
               switch (index) {
+                // require
                 case 0:
+                  const calculateRequiredDeps = {
+                    // Visitor to determine all required dependencies if no DEPS array is provided but a factory function with present require param.
+                    CallExpression(path) {
+                      const callee = path.node.callee;
+                      const args = path.node.arguments;
+
+                      // Get function scope of defineFactory where param is used
+                      if (path.scope.bindings[param.name] &&
+                        path.scope.bindings[param.name].identifier === param &&
+                        t.isIdentifier(callee, { name: param.name })) {
+                        requiredDeps.push(args[0]);
+                      }
+                    }
+                  };
+
+                  // We need to traverse over the complete path, since we didn't get the path of defineFactore here
+                  path.traverse(calculateRequiredDeps, {});
+
+                  // Push $__require to call params if used as factory default param
                   callParams.push(t.identifier('$__require'));
                   break;
+                // exports
                 case 1:
+                  // Push $__require to call params if used as factory default param
                   callParams.push(t.identifier('$__exports'));
+                  // Boolean flag which indicates that ```exports``` is present as factory param
                   isExportsInDeps = true;
                   break;
+                // module
                 case 2:
+                  // Push $__require to call params if used as factory default param
                   callParams.push(t.identifier('$__module'));
                   break;
               }
@@ -179,6 +211,9 @@ export default function ({ types: t }) {
             MODULE_URI: isModuleInDepsOrInFactoryParam ? buildModuleURIBinding() : null,
             BODY: factoryTypeTestNeeded ? defineFactory : t.returnStatement(defineFactory)
           });
+
+          // Concat with required depencies array which contains string literals if factory default params are used
+          dependencies = dependencies.concat(...requiredDeps);
 
           const systemRegister = buildTemplate({
             SYSTEM_GLOBAL: t.identifier('System'),
