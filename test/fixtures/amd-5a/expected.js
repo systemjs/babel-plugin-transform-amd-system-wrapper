@@ -4,7 +4,7 @@ function factory() {
 }
 
 System.registerDynamic('jquery', [], false, function ($__require, $__exports, $__module) {
-  if (typeof factory === 'object') {
+  if (typeof factory === 'function') {
     return factory.call(this);
   } else {
     return factory;
