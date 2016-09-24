@@ -1,6 +1,8 @@
 import template from 'babel-template';
 
-export default function ({ types: t }) {
+export default function({
+  types: t
+}) {
 
   const buildTemplate = template(`
     SYSTEM_GLOBAL.registerDynamic(MODULE_ID, [DEPS], false, BODY);
@@ -33,7 +35,9 @@ export default function ({ types: t }) {
   return {
     visitor: {
       CallExpression: {
-        enter(path, { opts = {} }) {
+        enter(path, {
+          opts = {}
+        }) {
           // don't perform nested transformations
           if (this.outerModuleDefinition) {
             return;
@@ -46,7 +50,9 @@ export default function ({ types: t }) {
           // match define(['dep1'], function(dep1) {})
           // match define('moduleName', function(dep1) {})
           // match define('moduleName', ['dep1'], function(dep1) {})
-          if (t.isIdentifier(callee, { name: 'define' }) &&
+          if (t.isIdentifier(callee, {
+              name: 'define'
+            }) &&
             !path.scope.hasBinding('define') &&
             args.length >= 1 &&
             args.length <= 3) {
@@ -91,6 +97,7 @@ export default function ({ types: t }) {
 
             // Call params used for the define factories wrapped in IIFEs
             var callParams = [];
+            var requireParamIndex = -1;
             if (t.isArrayExpression(deps)) {
               // Test if 'exports' exists as dependency: define(['exports'], function(exports) {})
               isExportsInDeps = deps.elements.filter((param) => param.value === 'exports').length > 0;
@@ -100,6 +107,10 @@ export default function ({ types: t }) {
                 if (['require', 'module', 'exports'].indexOf(param.value) !== -1) {
                   // Add all special identifiers in it's correct order and bind the to the param identifiers of the System.registerDynamic factory.
                   callParams.push(t.identifier(`$__${param.value}`));
+                  if (param.value === 'require') {
+                    // Save the index of the factories' require param.
+                    requireParamIndex = callParams.length - 1;
+                  }
                 } else {
                   callParams.push(t.callExpression(t.identifier('$__require'), [param]));
                 }
@@ -113,7 +124,7 @@ export default function ({ types: t }) {
 
             let newDeps = [];
 
-            // Handle CommonJS-style factories
+            // Handle CommonJS-sytle factories
             if (deps.length === 0 &&
               t.isFunctionExpression(factoryArg)) {
 
@@ -164,7 +175,9 @@ export default function ({ types: t }) {
                         // Get function scope of defineFactory where param is used
                         if (path.scope.bindings[param.name] &&
                           path.scope.bindings[param.name].identifier === param &&
-                          t.isIdentifier(callee, { name: param.name })) {
+                          t.isIdentifier(callee, {
+                            name: param.name
+                          })) {
                           newDeps.push(args[0]);
                         }
                       }
@@ -177,20 +190,37 @@ export default function ({ types: t }) {
                     // Push $__require to call params if used as factory default param
                     callParams.push(t.identifier('$__require'));
                     break;
-                  // exports
+                    // exports
                   case 1:
                     // Push $__require to call params if used as factory default param
                     callParams.push(t.identifier('$__exports'));
                     // Boolean flag which indicates that ```exports``` is present as factory param
                     isExportsInDeps = true;
                     break;
-                  // module
+                    // module
                   case 2:
                     // Push $__require to call params if used as factory default param
                     callParams.push(t.identifier('$__module'));
                     break;
                 }
               });
+            }
+
+            if (requireParamIndex !== -1 && t.isFunctionExpression(factoryArg)) {
+              const remapRequiredDeps = {
+                CallExpression(path) {
+                  const callee = path.node.callee;
+                  const args = path.node.arguments;
+                  if (t.isIdentifier(callee, {
+                      name: factoryArg.params[requireParamIndex] && factoryArg.params[requireParamIndex].name
+                    }) && t.isStringLiteral(args[0])) {
+                    if (typeof opts.map === 'function') {
+                      args[0].value = opts.map(args[0].value);
+                    }
+                  }
+                }
+              };
+              path.traverse(remapRequiredDeps, {});
             }
 
             let factoryReferenceIdentifier,
@@ -232,7 +262,7 @@ export default function ({ types: t }) {
               BODY: factoryTypeTestNeeded ? factoryArg : t.returnStatement(factoryArg)
             });
 
-            // Concat with required dependencies array which contains string literals if factory default params are used
+            // Concat with required depencies array which contains string literals if factory default params are used
             deps = deps.concat(...newDeps);
 
             // Map dependencies
@@ -259,19 +289,29 @@ export default function ({ types: t }) {
           }
         }
       },
-      MemberExpression(path, { opts }) {
+      MemberExpression(path, {
+        opts
+      }) {
         // Replace `define.amd` with `true` if it's used inside a logical expression.
-        if (t.isIdentifier(path.node.object, { name: 'define' }) &&
-          t.isIdentifier(path.node.property, { name: 'amd' }) &&
+        if (t.isIdentifier(path.node.object, {
+            name: 'define'
+          }) &&
+          t.isIdentifier(path.node.property, {
+            name: 'amd'
+          }) &&
           !path.scope.hasBinding('define') &&
           path.parentPath &&
           t.isLogicalExpression(path.parentPath)) {
           path.replaceWith(t.booleanLiteral(true));
         }
       },
-      Identifier(path, { opts }) {
+      Identifier(path, {
+        opts
+      }) {
         // Replace `typeof define` if it's used inside a unary expression.
-        if (t.isIdentifier(path.node, { name: 'define' }) &&
+        if (t.isIdentifier(path.node, {
+            name: 'define'
+          }) &&
           !path.scope.hasBinding('define') &&
           path.parentPath &&
           t.isUnaryExpression(path.parentPath) &&
