@@ -273,7 +273,7 @@ export default function({
             }
 
             const systemRegister = buildTemplate({
-              SYSTEM_GLOBAL: t.identifier('System'),
+              SYSTEM_GLOBAL: opts.systemGlobal && t.identifier(opts.systemGlobal) || t.identifier('System'),
               MODULE_ID: moduleName,
               DEPS: [...deps],
               BODY: factory
