@@ -108,7 +108,7 @@ export default function({
                   // Add all special identifiers in it's correct order and bind the to the param identifiers of the System.registerDynamic factory.
                   callParams.push(t.identifier(`$__${param.value}`));
                   if (param.value === 'require') {
-                    // Save the index of the factories' require param.
+                    // Save the index of the factory's require param.
                     requireParamIndex = callParams.length - 1;
                   }
                 } else {
@@ -116,7 +116,7 @@ export default function({
                 }
               });
 
-              // Remove all special identifiers from the dependency list which will be provided by the System.registerDynamic factory.
+              // Removal of all special identifiers from the dependency list, which are provided by the System.registerDynamic's factory.
               deps = deps.elements.filter((param) => {
                 return ['require', 'module', 'exports'].indexOf(param.value) === -1;
               });
@@ -124,12 +124,12 @@ export default function({
 
             let newDeps = [];
 
-            // Handle CommonJS-sytle factories
+            // Handle CommonJS-style factories
             if (deps.length === 0 &&
               t.isFunctionExpression(factoryArg)) {
 
               const detectThisAssignments = {
-                // Visitor to determine all assignments to `this` members in a cjs factory function. If any `exports` must be used as `thisBindingExpression`
+                // Visitor to determine all assignments to `this` members in a cjs factory function. If so, `exports` must be used as `thisBindingExpression`.
                 ThisExpression(path) {
 
                   let currentPath = path;
@@ -149,7 +149,7 @@ export default function({
                       }
                     }
 
-                    // If leftAssignmentOperand is a `this` expression we have to use `$__exports` as `thisBindingExpression`
+                    // If leftAssignmentOperand is a `this` expression we have to use `$__exports` as `thisBindingExpression`.
                     if (leftAssignmentOperand === path.node) {
                       isExportsInDeps = true;
                     }
@@ -157,11 +157,11 @@ export default function({
                 }
               };
 
-              // We need to traverse over the complete path, since we didn't get the path of defineFactore here
+              // We need to traverse over the complete path, since we didn't get the path of the cjs factory here.
               // TODO: Find a way to provide path of the cjs factory!!!
               path.traverse(detectThisAssignments, {});
 
-              // Iterate over each param of the define factory
+              // Iterate over each param of the cjs factory
               factoryArg.params.forEach((param, index) => {
                 switch (index) {
                   // require
@@ -272,9 +272,11 @@ export default function({
               });
             }
 
+            let moduleId = this.getModuleName();
+
             const systemRegister = buildTemplate({
               SYSTEM_GLOBAL: opts.systemGlobal && t.identifier(opts.systemGlobal) || t.identifier('System'),
-              MODULE_ID: moduleName,
+              MODULE_ID: moduleName || moduleId && t.stringLiteral(moduleId),
               DEPS: [...deps],
               BODY: factory
             });
