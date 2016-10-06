@@ -264,6 +264,13 @@ export default function({
 
             // Concat with required depencies array which contains string literals if factory default params are used
             deps = deps.concat(...newDeps);
+			if(opts.deps) {
+				deps = deps.concat(opts.deps.map( dep => {
+					return t.stringLiteral(dep);
+				}).filter(loadDep => {
+					return deps.filter(dep => dep.value === loadDep.value).length === 0;
+				}));
+			}
 
             // Map dependencies
             if (typeof opts.map === 'function') {
@@ -273,7 +280,7 @@ export default function({
             }
 
             let moduleId = this.getModuleName();
-
+			
             const systemRegister = buildTemplate({
               SYSTEM_GLOBAL: opts.systemGlobal && t.identifier(opts.systemGlobal) || t.identifier('System'),
               MODULE_ID: moduleName || moduleId && t.stringLiteral(moduleId),
