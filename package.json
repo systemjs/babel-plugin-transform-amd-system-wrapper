@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-amd-system-wrapper",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Wraps AMD scripts into System.registerDynamic(...",
   "repository": {
     "type": "git",
