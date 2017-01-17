@@ -78,7 +78,7 @@ $ babel --plugins transform-amd-system-wrapper script.js
 require("babel-core").transform("code", {
   plugins: [
     ["transform-amd-system-wrapper", {
-      systemGlobal: "SystemJS", // Overwrites the default system global identifier. optional (default: 'SystemJS') 
+      systemGlobal: "SystemJS", // Overwrites the default system global identifier. optional (default: 'System') 
       filterMode: true, // Flag to disable the transformation process. Enables the filter mode to filter AMD dependencies which will be added to output.metadata.amdDeps. optional (default: false) 
       deps: [], // Array of additional dependencies to add to the registerDynamic dependencies array. optional (default: [])  
       map: function(dep) {
