@@ -368,14 +368,16 @@ export default function ({
               // Concat with required depencies array which contains string literals if factory default params are used
               deps = deps.concat(...newDeps);
               if (opts.deps) {
+                // Concat all dependencies passed via the plugin's' options.
                 deps = deps.concat(opts.deps.map(dep => {
                   return t.stringLiteral(dep);
                 }).filter(loadDep => {
+                  // Filter out already contained dependencies
                   return deps.filter(dep => dep.value === loadDep.value).length === 0;
                 }));
               }
 
-              // Map dependencies
+              // Map dependencies using the dependency mapping function hook
               if (typeof opts.map === 'function') {
                 deps.forEach(e => {
                   e.value = opts.map(e.value);
@@ -405,7 +407,7 @@ export default function ({
       MemberExpression(path, {
         opts
       }) {
-        if(!opts.filterMode) {
+        if (!opts.filterMode) {
           // Replace `define.amd` with `true` if it's used inside a logical expression.
           if (t.isIdentifier(path.node.object, {
             name: 'define'
@@ -420,19 +422,15 @@ export default function ({
           }
         }
       },
-      Identifier(path, {
+      UnaryExpression(path, {
         opts
       }) {
-        if(!opts.filterMode) {
-          // Replace `typeof define` if it's used inside a unary expression.
-          if (t.isIdentifier(path.node, {
-            name: 'define'
-          }) &&
-            !path.scope.hasBinding('define') &&
-            path.parentPath &&
-            t.isUnaryExpression(path.parentPath) &&
-            path.parentPath.node.operator === 'typeof') {
-            path.parentPath.replaceWith(t.stringLiteral('function'));
+        if (!opts.filterMode) {
+          // Replace `typeof define` if it's used inside a unary expression.          
+          if (!path.scope.hasBinding('define') &&
+            path.node.operator === 'typeof' &&
+            path.node.argument.name === 'define') {
+            path.replaceWith(t.stringLiteral('function'));
           }
         }
       }
