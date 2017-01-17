@@ -8,9 +8,9 @@ Wraps AMD modules into `System.registerDynamic(...`
 
 ```js
 define(['bar'], function(bar, require, module) {
-    module.exports = {
+  module.exports = {
 	  bar: bar
-	}
+  }
 });
 ```
 
@@ -19,7 +19,7 @@ define(['bar'], function(bar, require, module) {
 {
   plugins: [
     ['transform-amd-system-wrapper', {
-		  map: function(dep) {
+      map: function(dep) {
         return dep;
       }
     }]
@@ -58,12 +58,9 @@ $ npm install babel-plugin-transform-amd-system-wrapper
 {
   "plugins": [
     ["transform-amd-system-wrapper", {
-      "systemGlobal": "SystemJS", // Overwrites the default system global identifier.
-      "filterMode": false, // Flag to disable the transformation process. Enables the filter mode to filter AMD dependencies which will be added to output.metadata.amdDeps.
-      "deps": [], // Array of additional dependencies to add to the registerDynamic dependencies array.
-      "map": function(dep) { // Dependency mapping function hook.
-        return dep;
-      }
+      "systemGlobal": "SystemJS",
+      "filterMode": false,
+      "deps": []
     }]
   ]
 }
@@ -81,12 +78,12 @@ $ babel --plugins transform-amd-system-wrapper script.js
 require("babel-core").transform("code", {
   plugins: [
     ["transform-amd-system-wrapper", {
-      systemGlobal: "SystemJS", // optional (default: 'SystemJS')
-      filterMode: true, // optional (default: undefined)
-      deps: [], // optional (default: undefined) 
+      systemGlobal: "SystemJS", // Overwrites the default system global identifier. optional (default: 'SystemJS') 
+      filterMode: true, // Flag to disable the transformation process. Enables the filter mode to filter AMD dependencies which will be added to output.metadata.amdDeps. optional (default: false) 
+      deps: [], // Array of additional dependencies to add to the registerDynamic dependencies array. optional (default: [])  
       map: function(dep) {
         return dep;
-      } // (default: identity)
+      } // Dependency mapping function hook. optional (default: identity) 
     }]
   ]
 });
