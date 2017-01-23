@@ -10,7 +10,7 @@ Wraps AMD modules into `System.registerDynamic(...`
 define(['bar'], function(bar, require, module) {
   module.exports = {
 	  bar: bar
-  }
+	};
 });
 ```
 
@@ -30,14 +30,14 @@ define(['bar'], function(bar, require, module) {
 **Out**
 
 ```js
-System.registerDynamic(['bar'], false, function ($__require, $__exports, $__module) {
+System.registerDynamic(['bar'], function ($__require, $__exports, $__module) {
   'use strict';
 
   $__module.uri = $__module.id;
   return (function(bar, require, module) {
     module.exports = {
-	  bar: bar
-	}
+	     bar: bar
+	  };
   }).call(this, $__require('bar'), $__require, $__module);
 });
 ```
@@ -78,12 +78,12 @@ $ babel --plugins transform-amd-system-wrapper script.js
 require("babel-core").transform("code", {
   plugins: [
     ["transform-amd-system-wrapper", {
-      systemGlobal: "SystemJS", // Overwrites the default system global identifier. optional (default: 'System') 
-      filterMode: true, // Flag to disable the transformation process. Enables the filter mode to filter AMD dependencies which will be added to output.metadata.amdDeps. optional (default: false) 
+      systemGlobal: "SystemJS", // Overwrites the default system global identifier. optional (default: 'System')
+      filterMode: true, // Flag to disable the transformation process. Enables the filter mode to filter AMD dependencies which will be added to output.metadata.amdDeps. optional (default: false)
       deps: [], // Array of additional dependencies to add to the registerDynamic dependencies array. optional (default: [])  
       map: function(dep) {
         return dep;
-      } // Dependency mapping function hook. optional (default: identity) 
+      } // Dependency mapping function hook. optional (default: identity)
     }]
   ]
 });
