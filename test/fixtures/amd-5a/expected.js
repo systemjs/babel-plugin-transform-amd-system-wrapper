@@ -3,7 +3,7 @@ function factory() {
   return { jquery: '1' };
 }
 
-System.registerDynamic('jquery', [], false, function ($__require, $__exports, $__module) {
+System.registerDynamic([], false, function ($__require, $__exports, $__module) {
   if (typeof factory === 'function') {
     return factory.call(this);
   } else {

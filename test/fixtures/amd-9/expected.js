@@ -1,4 +1,4 @@
-System.registerDynamic(['c'], false, function ($__require, $__exports, $__module) {
+System.registerDynamic('asdf', ['c'], false, function ($__require, $__exports, $__module) {
   return (function (c) {
     return c;
   }).call(this, $__require('c'));
