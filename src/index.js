@@ -39,8 +39,11 @@ export default function ({
       this.anonDefineIndex = -1;
       this.anonNamed = false;
       this.bundleDefines = [];
+    },
+    post () {
       // Save filtered amd dependencies in the file metadata
       this.file.metadata.amdDeps = this.amdDeps;
+      this.file.metadata.anonNamed = this.anonNamed;
     },
     visitor: {
       CallExpression: {
