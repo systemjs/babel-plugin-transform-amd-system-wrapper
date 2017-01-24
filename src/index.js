@@ -402,34 +402,25 @@ export default function ({
           }
         }
       },
-      MemberExpression(path, {
-        opts
-      }) {
+      MemberExpression(path, { opts }) {
         if (!opts.filterMode) {
-          // Replace `define.amd` with `true` if it's used inside a logical expression.
-          if (t.isIdentifier(path.node.object, {
-            name: 'define'
-          }) &&
-            t.isIdentifier(path.node.property, {
-              name: 'amd'
-            }) &&
-            !path.scope.hasBinding('define') &&
-            path.parentPath &&
-            t.isLogicalExpression(path.parentPath)) {
-            path.replaceWith(t.booleanLiteral(true));
+          // Replace `define.amd` with `true` if it's used inside a logical expression,
+          // and replace `typeof define.amd` with `'object'`
+          if (t.isIdentifier(path.node.object, { name: 'define' }) && t.isIdentifier(path.node.property, { name: 'amd' }) &&
+              !path.scope.hasBinding('define') && path.parentPath) {
+            if (t.isLogicalExpression(path.parentPath))
+              path.replaceWith(t.booleanLiteral(true));
+            else if (t.isUnaryExpression(path.parentPath) && path.parentPath.node.operator === 'typeof')
+              path.parentPath.replaceWith(t.stringLiteral('object'));
           }
         }
       },
-      UnaryExpression(path, {
-        opts
-      }) {
+      UnaryExpression(path, { opts }) {
         if (!opts.filterMode) {
           // Replace `typeof define` if it's used inside a unary expression.
-          if (!path.scope.hasBinding('define') &&
-            path.node.operator === 'typeof' &&
-            path.node.argument.name === 'define') {
+          if (!path.scope.hasBinding('define') && path.node.operator === 'typeof' &&
+              path.node.argument.name === 'define')
             path.replaceWith(t.stringLiteral('function'));
-          }
         }
       }
     }

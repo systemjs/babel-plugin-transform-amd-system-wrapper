@@ -1,5 +1,5 @@
 (function(root, factory) {
-  if (typeof define === 'function' && define.amd) {
+  if (typeof define === 'function' && define.amd && typeof define.amd == 'object') {
     // factory is called  with "$__exports" in the case where "exports" is required by AMD, OR when using AMD "function" form
     define(['require', 'exports', 'cjs.js'], factory);
   } else if (typeof exports === 'object') {
