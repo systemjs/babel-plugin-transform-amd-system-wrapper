@@ -251,11 +251,6 @@ export default function ({
                           leftAssignmentOperand = leftAssignmentOperand.object;
                         }
                       }
-
-                      // If leftAssignmentOperand is a `this` expression we have to use `$__exports` as `thisBindingExpression`.
-                      if (leftAssignmentOperand === path.node) {
-                        isExportsInDeps = true;
-                      }
                     }
                   }
                 };
@@ -426,7 +421,7 @@ export default function ({
         opts
       }) {
         if (!opts.filterMode) {
-          // Replace `typeof define` if it's used inside a unary expression.          
+          // Replace `typeof define` if it's used inside a unary expression.
           if (!path.scope.hasBinding('define') &&
             path.node.operator === 'typeof' &&
             path.node.argument.name === 'define') {
