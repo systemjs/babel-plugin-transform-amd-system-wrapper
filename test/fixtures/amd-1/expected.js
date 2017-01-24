@@ -1,4 +1,4 @@
-System.registerDynamic(['./first.js', './second.js'], function ($__require, $__exports, $__module) {
+System.registerDynamic(['./first.js', './second.js'], false, function ($__require, $__exports, $__module) {
   $__module.uri = $__module.id;
   return (function (first, second, require, module) {
 

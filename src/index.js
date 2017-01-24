@@ -1,21 +1,15 @@
 import template from 'babel-template';
 
-export default function({ types: t }) {
+export default function ({
+  types: t
+}) {
 
   const buildTemplate = template(`
-    SYSTEM_GLOBAL.registerDynamic(MODULE_ID, [DEPS], BODY);
+    SYSTEM_GLOBAL.registerDynamic(MODULE_ID, [DEPS], false, BODY);
   `);
-
-  const buildDepRequires = deps => {
-    let depRequires = [];
-    for (let dep of deps)
-      depRequires.push(t.expressionStatement(t.callExpression(t.Identifier('$__require'), [dep])));
-    return depRequires;
-  };
 
   const buildFactory = template(`
     (function($__require, $__exports, $__module) {
-      DEP_REQUIRES
       MODULE_URI
       BODY;
     })
@@ -50,12 +44,15 @@ export default function({ types: t }) {
     },
     visitor: {
       CallExpression: {
-        enter (path, { opts = {} }) {
-
+        enter(path, {
+          opts = {}
+        }) {
           var that = this;
+
           // don't perform nested transformations
-          if (this.outerModuleDefinition)
+          if (this.outerModuleDefinition) {
             return;
+          }
 
           const callee = path.node.callee;
           const args = path.node.arguments;
@@ -64,8 +61,12 @@ export default function({ types: t }) {
           // match define(['dep1'], function(dep1) {})
           // match define('moduleName', function(dep1) {})
           // match define('moduleName', ['dep1'], function(dep1) {})
-          if (t.isIdentifier(callee, { name: 'define' }) && !path.scope.hasBinding('define') &&
-              args.length >= 1 && args.length <= 3) {
+          if (t.isIdentifier(callee, {
+            name: 'define'
+          }) &&
+            !path.scope.hasBinding('define') &&
+            args.length >= 1 &&
+            args.length <= 3) {
 
             // remember the outer `define()` to avoid transforming the inner ones
             this.outerModuleDefinition = path;
@@ -123,71 +124,72 @@ export default function({ types: t }) {
                 }
               }
 
-              if (!parseamdDeps)
+              if (!parseamdDeps) {
                 return;
+              }
 
               if (depArg !== -1 && args[depArg].elements) {
-                args[depArg].elements.forEach(dep => {
+                args[depArg].elements.forEach(function (dep) {
                   if (['require', 'exports', 'module'].indexOf(dep.value) != -1)
                     return;
                   if (that.bundleDefines.indexOf(dep.value) != -1)
                     return;
                   that.amdDeps.push(dep.value);
                 });
-              }
-              else if (depArg === -1 && t.isFunctionExpression(args[factoryArg])) {
+              } else if (depArg === -1 && t.isFunctionExpression(args[factoryArg])) {
                 let cjsFactory = args[factoryArg],
-                    fnParameters = args[factoryArg].params,
-                    requireParam = fnParameters[0];
+                  fnParameters = args[factoryArg].params,
+                  requireParam = fnParameters[0];
 
                 if (requireParam) {
                   const filterAMDamdDeps = {
                     // Visitor to determine all required dependencies if no this.amdDeps array is provided but a factory function with present `require` param.
-                    CallExpression (path) {
+                    CallExpression(path) {
                       const callee = path.node.callee;
                       const args = path.node.arguments;
 
                       // Get function scope of defineFactory where param is used
                       if (path.scope.bindings[requireParam.name] &&
-                          path.scope.bindings[requireParam.name].identifier === requireParam &&
-                          t.isIdentifier(callee, { name: requireParam.name }))
+                        path.scope.bindings[requireParam.name].identifier === requireParam &&
+                        t.isIdentifier(callee, {
+                          name: requireParam.name
+                        })) {
                         that.amdDeps.push(args[0].value);
+                      }
                     }
                   };
                   path.traverse(filterAMDamdDeps);
                 }
               }
-            }
-            else {
+            } else {
 
               let moduleName = null,
                 deps = [],
                 factoryArg = null,
                 isExportsInDeps = false,
-                isModuleInDepsOrInFactoryParam = false,
-                factoryRequired = [];
+                isModuleInDepsOrInFactoryParam = false;
 
               if (args.length === 1) {
                 // first param is factory object/function
                 factoryArg = args[0];
                 // parse factory params
                 if (t.isFunctionExpression(factoryArg)) {
-                  factoryArg.params.forEach(factoryParam => {
-                    if (t.isIdentifier(factoryParam) && factoryParam.name === 'module')
+                  factoryArg.params.forEach((factoryParam) => {
+                    if (t.isIdentifier(factoryParam) && factoryParam.name === 'module') {
                       isModuleInDepsOrInFactoryParam = true;
+                    }
                   });
                 }
-              }
-              else if (args.length === 2) {
+              } else if (args.length === 2) {
                 // first param is either module name or dependency array
-                if (t.isStringLiteral(args[0]))
+                if (t.isStringLiteral(args[0])) {
                   moduleName = args[0];
-                else if (t.isArrayExpression(args[0]))
+                } else if (t.isArrayExpression(args[0])) {
                   deps = args[0];
+                }
                 // second param is factory object/function
                 factoryArg = args[1];
-              }
-              else {
+              } else {
                 // first param is module name
                 moduleName = args[0];
                 // second param is dependency array
@@ -204,7 +206,7 @@ export default function({ types: t }) {
                 isExportsInDeps = deps.elements.filter((param) => param.value === 'exports').length > 0;
                 isModuleInDepsOrInFactoryParam = deps.elements.filter((param) => param.value === 'module').length > 0;
 
-                deps.elements.forEach(param => {
+                deps.elements.forEach((param) => {
                   if (['require', 'module', 'exports'].indexOf(param.value) !== -1) {
                     // Add all special identifiers in it's correct order and bind the to the param identifiers of the System.registerDynamic factory.
                     callParams.push(t.identifier(`$__${param.value}`));
@@ -212,15 +214,13 @@ export default function({ types: t }) {
                       // Save the index of the factory's require param.
                       requireParamIndex = callParams.length - 1;
                     }
-                  }
-                  else {
+                  } else {
                     callParams.push(t.callExpression(t.identifier('$__require'), [param]));
-                    factoryRequired.push(param.value);
                   }
                 });
 
                 // Removal of all special identifiers from the dependency list, which are provided by the System.registerDynamic's factory.
-                deps = deps.elements.filter(param => {
+                deps = deps.elements.filter((param) => {
                   return ['require', 'module', 'exports'].indexOf(param.value) === -1;
                 });
               }
@@ -228,7 +228,8 @@ export default function({ types: t }) {
               let newDeps = [];
 
               // Handle CommonJS-style factories
-              if (deps.length === 0 && t.isFunctionExpression(factoryArg)) {
+              if (deps.length === 0 &&
+                t.isFunctionExpression(factoryArg)) {
 
                 const detectThisAssignments = {
                   // Visitor to determine all assignments to `this` members in a cjs factory function. If so, `exports` must be used as `thisBindingExpression`.
@@ -361,7 +362,6 @@ export default function({ types: t }) {
 
               const factory = buildFactory({
                 MODULE_URI: isModuleInDepsOrInFactoryParam ? buildModuleURIBinding() : null,
-                DEP_REQUIRES: buildDepRequires(deps.map(dep => dep.value).filter(dep => factoryRequired.indexOf(dep) === -1)),
                 BODY: factoryTypeTestNeeded ? factoryArg : t.returnStatement(factoryArg)
               });
 
@@ -369,8 +369,9 @@ export default function({ types: t }) {
               deps = deps.concat(...newDeps);
               if (opts.deps) {
                 // Concat all dependencies passed via the plugin's' options.
-                deps = deps.concat(opts.deps.map(dep => t.stringLiteral(dep))
-                .filter(loadDep => {
+                deps = deps.concat(opts.deps.map(dep => {
+                  return t.stringLiteral(dep);
+                }).filter(loadDep => {
                   // Filter out already contained dependencies
                   return deps.filter(dep => dep.value === loadDep.value).length === 0;
                 }));
@@ -396,25 +397,41 @@ export default function({ types: t }) {
             }
           }
         },
-        exit (path) {
+        exit(path) {
           // are we inside a `define()`?
-          if (this.outerModuleDefinition === path)
+          if (this.outerModuleDefinition === path) {
             this.outerModuleDefinition = null;
+          }
         }
       },
-      MemberExpression(path, { opts }) {
+      MemberExpression(path, {
+        opts
+      }) {
         if (!opts.filterMode) {
           // Replace `define.amd` with `true` if it's used inside a logical expression.
-          if (t.isIdentifier(path.node.object, { name: 'define' }) && t.isIdentifier(path.node.property, { name: 'amd' }) &&
-              !path.scope.hasBinding('define') && path.parentPath && t.isLogicalExpression(path.parentPath))
+          if (t.isIdentifier(path.node.object, {
+            name: 'define'
+          }) &&
+            t.isIdentifier(path.node.property, {
+              name: 'amd'
+            }) &&
+            !path.scope.hasBinding('define') &&
+            path.parentPath &&
+            t.isLogicalExpression(path.parentPath)) {
             path.replaceWith(t.booleanLiteral(true));
+          }
         }
       },
-      UnaryExpression(path, { opts }) {
+      UnaryExpression(path, {
+        opts
+      }) {
         if (!opts.filterMode) {
-          // Replace `typeof define` if it's used inside a unary expression.
-          if (!path.scope.hasBinding('define') && path.node.operator === 'typeof' && path.node.argument.name === 'define')
+          // Replace `typeof define` if it's used inside a unary expression.          
+          if (!path.scope.hasBinding('define') &&
+            path.node.operator === 'typeof' &&
+            path.node.argument.name === 'define') {
             path.replaceWith(t.stringLiteral('function'));
+          }
         }
       }
     }
