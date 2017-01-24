@@ -383,7 +383,7 @@ export default function ({
 
               const systemRegister = buildTemplate({
                 SYSTEM_GLOBAL: opts.systemGlobal && t.identifier(opts.systemGlobal) || t.identifier('System'),
-                MODULE_ID: moduleName || moduleId && t.stringLiteral(moduleId),
+                MODULE_ID: !opts.anonNamed && moduleName || moduleId && t.stringLiteral(moduleId),
                 DEPS: [...deps],
                 BODY: factory
               });

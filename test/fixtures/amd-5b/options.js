@@ -1,3 +1,4 @@
 module.exports = {
-  moduleName: 'asdf'
+  moduleName: 'asdf',
+  anonNamed: true
 };
