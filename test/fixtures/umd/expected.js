@@ -1,5 +1,5 @@
 (function (root, factory) {
-  if ('function' === 'function' && true && 'object' == 'object') {
+  if ('function' === 'function' && true && 'object' == 'object' && true) {
     // factory is called  with "$__exports" in the case where "exports" is required by AMD, OR when using AMD "function" form
     System.registerDynamic(['cjs.js'], false, function ($__require, $__exports, $__module) {
       if (typeof factory === 'function') {

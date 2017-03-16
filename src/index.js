@@ -406,7 +406,8 @@ export default function ({
         if (!opts.filterMode) {
           // Replace `define.amd` with `true` if it's used inside a logical expression,
           // and replace `typeof define.amd` with `'object'`
-          if (t.isIdentifier(path.node.object, { name: 'define' }) && t.isIdentifier(path.node.property, { name: 'amd' }) &&
+          if (t.isIdentifier(path.node.object, { name: 'define' }) &&
+              (t.isIdentifier(path.node.property, { name: 'amd' }) || t.isStringLiteral(path.node.property, { value: 'amd' })) &&
               !path.scope.hasBinding('define') && path.parentPath) {
             if (t.isLogicalExpression(path.parentPath))
               path.replaceWith(t.booleanLiteral(true));
