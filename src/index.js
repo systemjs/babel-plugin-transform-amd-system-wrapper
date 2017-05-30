@@ -375,18 +375,36 @@ export default function ({
               if (esModule) {
                 path.traverse({
                   StringLiteral (path) {
-                    if (path.node.value === '__esModule') {
+                    if (this.functionDepth < 2 && path.node.value === '__esModule') {
                       esModule = false;
                       path.stop();
                     }
                   },
                   MemberExpression (path) {
-                    if (path.node.property.name === '__esModule') {
+                    if (this.functionDepth < 2 && path.node.property.name === '__esModule') {
                       esModule = false;
                       path.stop();
                     }
+                  },
+                  ObjectProperty (path) {
+                    if (this.functionDepth < 2 && path.node.key.name === '__esModule') {
+                      esModule = false;
+                      path.stop();
+                    }
+                  },
+                  Scope: {
+                    enter (path) {
+                      if (t.isFunction(path.scope.block))
+                        this.functionDepth++;
+                      if (this.functionDepth > 2)
+                        path.skip();
+                    },
+                    exit (path) {
+                      if (t.isFunction(path.scope.block))
+                        this.functionDepth--;
+                    }
                   }
-                });
+                }, { functionDepth: 0 });
               }
 
               const factory = (esModule ? buildFactoryEs : buildFactory)({
