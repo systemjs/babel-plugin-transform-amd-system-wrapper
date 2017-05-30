@@ -371,7 +371,25 @@ export default function ({
                 });
               }
 
-              const factory = (opts.esModule ? buildFactoryEs : buildFactory)({
+              let esModule = opts.esModule;
+              if (esModule) {
+                path.traverse({
+                  StringLiteral (path) {
+                    if (path.node.value === '__esModule') {
+                      esModule = false;
+                      path.stop();
+                    }
+                  },
+                  MemberExpression (path) {
+                    if (path.node.property.name === '__esModule') {
+                      esModule = false;
+                      path.stop();
+                    }
+                  }
+                });
+              }
+
+              const factory = (esModule ? buildFactoryEs : buildFactory)({
                 MODULE_URI: isModuleInDepsOrInFactoryParam ? buildModuleURIBinding() : null,
                 BODY: factoryTypeTestNeeded ? factoryArg : t.returnStatement(factoryArg)
               });
