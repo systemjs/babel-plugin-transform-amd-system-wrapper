@@ -15,6 +15,19 @@ export default function ({
     })
   `);
 
+  const buildFactoryEs = template(`
+    (function($__require, $__exports, $__module) {
+      var $__moduleValue = (function() {
+        MODULE_URI
+        BODY;
+      })() || $__module.exports;
+      Object.defineProperty($__moduleValue, '__esModule', {
+        value: true
+      });
+      return $__moduleValue;
+    });
+  `);
+
   const buildFactoryTypeCheck = template(`
     FACTORY_DECLARATION
     if (typeof FACTORY_REFERENCE === TYPE) {
@@ -358,7 +371,7 @@ export default function ({
                 });
               }
 
-              const factory = buildFactory({
+              const factory = (opts.esModule ? buildFactoryEs : buildFactory)({
                 MODULE_URI: isModuleInDepsOrInFactoryParam ? buildModuleURIBinding() : null,
                 BODY: factoryTypeTestNeeded ? factoryArg : t.returnStatement(factoryArg)
               });
